@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>多视频播放平台</title>
+    <title>视频分享平台</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         * {
@@ -225,8 +225,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
-            color: #666;
+        }
+        
+        .custom-qrcode img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
         
         .share-buttons {
@@ -345,8 +349,8 @@
 </head>
 <body>
     <div class="header">
-        <h1>多视频播放平台</h1>
-        <p>海量资源，精彩不断</p>
+        <h1>视频分享平台</h1>
+        <p>精彩视频免费看，分享好友解锁更多</p>
     </div>
     
     <!-- 可自定义的超链接图片 -->
@@ -359,7 +363,7 @@
         
         <div id="lockedOverlay" class="locked-overlay hidden">
             <div class="lock-icon">🔒</div>
-            <p>您已观看完免费视频，分享给好友即可解锁更多内容</p>
+            <p>您已观看完3个免费视频，分享给好友即可解锁更多内容</p>
             <button class="unlock-btn" id="showShareBtn">立即分享</button>
         </div>
     </div>
@@ -373,7 +377,7 @@
         <p>防走丢提示如无法打开，换一部作品分享给裙友</p>
         <div class="watch-count">
             <div class="icon">!</div>
-            <div>今日剩余免费观看次数: <span id="freeViews">3</span> 次</div>
+            <div>今日已观看: <span id="watchedCount">0</span>/3 个免费视频</div>
         </div>
     </div>
     
@@ -386,18 +390,19 @@
     
     <div class="share-section hidden" id="shareSection">
         <h3>分享给好友解锁更多视频</h3>
-        <p>分享下方二维码给好友或群，即可继续观看</p>
+        <p>请将下方二维码分享给好友或微信群，分享后即可继续观看</p>
         <div class="qrcode-container">
             <div class="custom-qrcode">
-                <!-- 请在这里替换为您自己的二维码图片 -->
-                <!-- <img src="https://tech-de.github.io/from2" alt="分享二维码" style="width:100%;height:100%;"> -->
-                请替换为您的二维码
+                <!-- 替换为您的二维码图片 -->
+                <img src="https://via.placeholder.com/160x160/000000/FFFFFF?text=您的二维码" alt="分享二维码">
             </div>
         </div>
         <div class="share-buttons">
-            <button class="share-btn wechat">分享给好友</button>
-            <button class="share-btn moments">分享到朋友圈</button>
+            <button class="share-btn wechat" id="shareToFriend">分享给好友</button>
+            <button class="share-btn moments" id="shareToGroup">分享到微信群</button>
         </div>
+        <p style="margin-top: 15px; font-size: 12px; color: #666;">分享后请返回此页面，点击"我已分享"按钮</p>
+        <button class="unlock-btn" id="confirmShare" style="margin-top: 10px;">我已分享</button>
     </div>
     
     <div class="options-section">
@@ -431,49 +436,65 @@
     </div>
     
     <div class="footer">
-        <p>© 2025 视频播放平台 · 仅供学习交流使用</p>
+        <p>© 2025 视频分享平台 · 仅供学习交流使用</p>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // 初始化变量
-            let freeViews = 3;
+            let watchedCount = 0;
             let hasShared = false;
             const videoPlayer = document.getElementById('videoPlayer');
-            const freeViewsElement = document.getElementById('freeViews');
+            const watchedCountElement = document.getElementById('watchedCount');
             const lockedOverlay = document.getElementById('lockedOverlay');
             const shareSection = document.getElementById('shareSection');
             const showShareBtn = document.getElementById('showShareBtn');
             const videoItemsContainer = document.getElementById('videoItems');
             const currentVideoTitle = document.getElementById('currentVideoTitle');
+            const shareToFriend = document.getElementById('shareToFriend');
+            const shareToGroup = document.getElementById('shareToGroup');
+            const confirmShare = document.getElementById('confirmShare');
+            
+            // 从本地存储加载观看次数
+            const savedWatchedCount = localStorage.getItem('watchedCount');
+            if (savedWatchedCount !== null) {
+                watchedCount = parseInt(savedWatchedCount);
+                watchedCountElement.textContent = watchedCount;
+            }
+            
+            // 从本地存储加载分享状态
+            const savedHasShared = localStorage.getItem('hasShared');
+            if (savedHasShared !== null) {
+                hasShared = JSON.parse(savedHasShared);
+            }
             
             // 在这里添加您的多条M3U8链接
             const videoList = [
                 {
                     id: 1,
                     title: "示例视频1 - 风景欣赏",
-                    url: "https://v202509.fhbbff.com/20251026/PbfagE2m/index.m3u8",
+                    url: "https://v202509.fhbbff.com/20251025/YvivGiif/index.m3u8",
                     duration: "5:30",
                     thumbnail: "https://via.placeholder.com/60x45/4CAF50/FFFFFF?text=风景"
                 },
                 {
                     id: 2,
                     title: "示例视频2 - 动物世界",
-                    url: "https://v202509.fhbbff.com/20251025/YvivGiif/index.m3u8",
+                    url: "https://v202509.fhbbff.com/20251025/KJSSxEk1/index.m3u8",
                     duration: "10:15",
                     thumbnail: "https://via.placeholder.com/60x45/2196F3/FFFFFF?text=动物"
                 },
                 {
                     id: 3,
                     title: "示例视频3 - 科技前沿",
-                    url: "https://v202509.fhbbff.com/20251025/KJSSxEk1/index.m3u8",
+                    url: "https://v202509.fhbbff.com/20251023/tc19cBGs/index.m3u8",
                     duration: "7:45",
                     thumbnail: "https://via.placeholder.com/60x45/FF9800/FFFFFF?text=科技"
                 },
                 {
                     id: 4,
                     title: "示例视频4 - 音乐MV",
-                    url: "https://v202509.fhbbff.com/20251023/tc19cBGs/index.m3u8",
+                    url: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
                     duration: "4:20",
                     thumbnail: "https://via.placeholder.com/60x45/E91E63/FFFFFF?text=音乐"
                 },
@@ -516,6 +537,12 @@
                     `;
                     
                     videoItem.addEventListener('click', function() {
+                        // 检查是否已达到观看限制
+                        if (watchedCount >= 3 && !hasShared) {
+                            lockedOverlay.classList.remove('hidden');
+                            return;
+                        }
+                        
                         // 移除所有active类
                         document.querySelectorAll('.video-item').forEach(item => {
                             item.classList.remove('active');
@@ -534,11 +561,6 @@
             
             // 播放视频函数
             function playVideo(video) {
-                if (freeViews <= 0 && !hasShared) {
-                    lockedOverlay.classList.remove('hidden');
-                    return;
-                }
-                
                 currentVideoTitle.textContent = video.title;
                 
                 // 如果HLS已经存在，先销毁
@@ -554,10 +576,13 @@
                     hls.on(Hls.Events.MANIFEST_PARSED, function() {
                         videoPlayer.play();
                         
-                        // 减少免费观看次数
+                        // 增加观看次数
                         if (!hasShared) {
-                            freeViews--;
-                            updateFreeViews();
+                            watchedCount++;
+                            updateWatchedCount();
+                            
+                            // 保存到本地存储
+                            localStorage.setItem('watchedCount', watchedCount);
                         }
                     });
                 } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
@@ -566,20 +591,23 @@
                     videoPlayer.addEventListener('loadedmetadata', function() {
                         videoPlayer.play();
                         
-                        // 减少免费观看次数
+                        // 增加观看次数
                         if (!hasShared) {
-                            freeViews--;
-                            updateFreeViews();
+                            watchedCount++;
+                            updateWatchedCount();
+                            
+                            // 保存到本地存储
+                            localStorage.setItem('watchedCount', watchedCount);
                         }
                     });
                 }
             }
             
-            // 更新免费观看次数
-            function updateFreeViews() {
-                freeViewsElement.textContent = freeViews;
+            // 更新观看次数
+            function updateWatchedCount() {
+                watchedCountElement.textContent = watchedCount;
                 
-                if (freeViews <= 0 && !hasShared) {
+                if (watchedCount >= 3 && !hasShared) {
                     // 显示锁定覆盖层
                     lockedOverlay.classList.remove('hidden');
                     videoPlayer.pause();
@@ -593,24 +621,40 @@
                 shareSection.classList.remove('hidden');
             });
             
-            // 模拟分享功能
-            document.querySelectorAll('.share-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    alert('分享成功！视频已解锁');
-                    hasShared = true;
-                    lockedOverlay.classList.add('hidden');
-                    shareSection.classList.add('hidden');
-                    
-                    // 如果当前有视频，继续播放
-                    if (videoPlayer.src) {
-                        videoPlayer.play();
-                    }
-                });
+            // 分享给好友
+            shareToFriend.addEventListener('click', function() {
+                alert('请将二维码图片保存并分享给微信好友');
+            });
+            
+            // 分享到微信群
+            shareToGroup.addEventListener('click', function() {
+                alert('请将二维码图片保存并分享到微信群');
+            });
+            
+            // 确认分享
+            confirmShare.addEventListener('click', function() {
+                alert('分享验证成功！已解锁所有视频');
+                hasShared = true;
+                lockedOverlay.classList.add('hidden');
+                shareSection.classList.add('hidden');
+                
+                // 保存分享状态到本地存储
+                localStorage.setItem('hasShared', JSON.stringify(hasShared));
+                
+                // 如果当前有视频，继续播放
+                if (videoPlayer.src) {
+                    videoPlayer.play();
+                }
             });
             
             // 初始化
             renderVideoList();
-            updateFreeViews();
+            updateWatchedCount();
+            
+            // 检查是否需要显示锁定界面
+            if (watchedCount >= 3 && !hasShared) {
+                lockedOverlay.classList.remove('hidden');
+            }
         });
     </script>
 </body>
