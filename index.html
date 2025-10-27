@@ -20,6 +20,8 @@
             padding: 10px;
             max-width: 500px;
             margin: 0 auto;
+            position: relative;
+            min-height: 100vh;
         }
         
         .header {
@@ -194,69 +196,139 @@
             color: #666;
         }
         
-        .share-section {
+        .share-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
             background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            padding: 20px 15px 30px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .share-panel.active {
+            transform: translateY(0);
+        }
+        
+        .share-panel h3 {
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        .share-section h3 {
+            margin-bottom: 20px;
             font-size: 16px;
-            margin-bottom: 15px;
-            color: #ff4081;
+            color: #333;
         }
         
-        .qrcode-container {
-            display: flex;
-            justify-content: center;
-            margin: 15px 0;
+        .share-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
         }
         
-        .custom-qrcode {
-            width: 180px;
-            height: 180px;
-            border: 1px solid #eee;
-            padding: 10px;
-            border-radius: 8px;
-            background: #f9f9f9;
+        .share-option {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-        }
-        
-        .custom-qrcode img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        
-        .share-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-        }
-        
-        .share-btn {
-            flex: 1;
-            padding: 10px;
-            background: #4caf50;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            margin: 0 5px;
             cursor: pointer;
         }
         
-        .share-btn.wechat {
-            background: #09bb07;
+        .share-option .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            font-size: 24px;
         }
         
-        .share-btn.moments {
+        .share-option .text {
+            font-size: 12px;
+            color: #333;
+        }
+        
+        .share-option.wechat .icon {
+            background: #09bb07;
+            color: white;
+        }
+        
+        .share-option.moments .icon {
             background: #7bc549;
+            color: white;
+        }
+        
+        .share-option.save .icon {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .share-option.collect .icon {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .cancel-btn {
+            width: 100%;
+            padding: 12px;
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .share-guide {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .share-guide.active {
+            display: flex;
+        }
+        
+        .share-guide img {
+            width: 200px;
+            margin-bottom: 20px;
+            border: 2px solid white;
+            border-radius: 10px;
+        }
+        
+        .share-guide p {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .share-guide .close-guide {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #ff4081;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
         }
         
         .options-section {
@@ -317,7 +389,7 @@
             justify-content: center;
             align-items: center;
             color: white;
-            z-index: 10;
+            z-index: 100;
             border-radius: 8px;
         }
         
@@ -344,6 +416,21 @@
         
         .hidden {
             display: none;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        
+        .overlay.active {
+            display: block;
         }
     </style>
 </head>
@@ -388,23 +475,6 @@
         </div>
     </div>
     
-    <div class="share-section hidden" id="shareSection">
-        <h3>分享给好友解锁更多视频</h3>
-        <p>请将下方二维码分享给好友或微信群，分享后即可继续观看</p>
-        <div class="qrcode-container">
-            <div class="custom-qrcode">
-                <!-- 替换为您的二维码图片 -->
-                <img src="https://ibb.co.com/Z63h8mck" alt="分享二维码">
-            </div>
-        </div>
-        <div class="share-buttons">
-            <button class="share-btn wechat" id="shareToFriend">分享给好友</button>
-            <button class="share-btn moments" id="shareToGroup">分享到微信群</button>
-        </div>
-        <p style="margin-top: 15px; font-size: 12px; color: #666;">分享后请返回此页面，点击"我已分享"按钮</p>
-        <button class="unlock-btn" id="confirmShare" style="margin-top: 10px;">我已分享</button>
-    </div>
-    
     <div class="options-section">
         <h3>精选内容推荐</h3>
         <div class="options-grid">
@@ -438,6 +508,41 @@
     <div class="footer">
         <p>© 2025 视频分享平台 · 仅供学习交流使用</p>
     </div>
+    
+    <!-- 分享面板 -->
+    <div class="share-panel" id="sharePanel">
+        <h3>需要分享后才能继续观影</h3>
+        <div class="share-options">
+            <div class="share-option wechat" id="shareToFriend">
+                <div class="icon">👤</div>
+                <div class="text">转发给朋友</div>
+            </div>
+            <div class="share-option moments" id="shareToMoments">
+                <div class="icon">👥</div>
+                <div class="text">分享到朋友圈</div>
+            </div>
+            <div class="share-option save" id="saveToPhone">
+                <div class="icon">💾</div>
+                <div class="text">保存到手机</div>
+            </div>
+            <div class="share-option collect" id="collectBtn">
+                <div class="icon">⭐</div>
+                <div class="text">收藏</div>
+            </div>
+        </div>
+        <button class="cancel-btn" id="cancelShare">取消</button>
+    </div>
+    
+    <!-- 分享指引 -->
+    <div class="share-guide" id="shareGuide">
+        <img src="https://ibb.co.com/Z63h8mck" alt="微信分享指引">
+        <p>请点击右上角"..."按钮</p>
+        <p>然后选择"发送给朋友"或"分享到朋友圈"</p>
+        <button class="close-guide" id="closeGuide">我已分享</button>
+    </div>
+    
+    <!-- 遮罩层 -->
+    <div class="overlay" id="overlay"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -447,13 +552,18 @@
             const videoPlayer = document.getElementById('videoPlayer');
             const watchedCountElement = document.getElementById('watchedCount');
             const lockedOverlay = document.getElementById('lockedOverlay');
-            const shareSection = document.getElementById('shareSection');
             const showShareBtn = document.getElementById('showShareBtn');
             const videoItemsContainer = document.getElementById('videoItems');
             const currentVideoTitle = document.getElementById('currentVideoTitle');
+            const sharePanel = document.getElementById('sharePanel');
+            const overlay = document.getElementById('overlay');
+            const shareGuide = document.getElementById('shareGuide');
             const shareToFriend = document.getElementById('shareToFriend');
-            const shareToGroup = document.getElementById('shareToGroup');
-            const confirmShare = document.getElementById('confirmShare');
+            const shareToMoments = document.getElementById('shareToMoments');
+            const saveToPhone = document.getElementById('saveToPhone');
+            const collectBtn = document.getElementById('collectBtn');
+            const cancelShare = document.getElementById('cancelShare');
+            const closeGuide = document.getElementById('closeGuide');
             
             // 从本地存储加载观看次数
             const savedWatchedCount = localStorage.getItem('watchedCount');
@@ -616,35 +726,68 @@
                 }
             }
             
-            // 显示分享区域
+            // 显示分享面板
             showShareBtn.addEventListener('click', function() {
-                shareSection.classList.remove('hidden');
+                sharePanel.classList.add('active');
+                overlay.classList.add('active');
             });
             
-            // 分享给好友
+            // 转发给朋友
             shareToFriend.addEventListener('click', function() {
-                alert('请将二维码图片保存并分享给微信好友');
+                sharePanel.classList.remove('active');
+                shareGuide.classList.add('active');
             });
             
-            // 分享到微信群
-            shareToGroup.addEventListener('click', function() {
-                alert('请将二维码图片保存并分享到微信群');
+            // 分享到朋友圈
+            shareToMoments.addEventListener('click', function() {
+                sharePanel.classList.remove('active');
+                shareGuide.classList.add('active');
             });
             
-            // 确认分享
-            confirmShare.addEventListener('click', function() {
-                alert('分享验证成功！已解锁所有视频');
+            // 保存到手机
+            saveToPhone.addEventListener('click', function() {
+                // 创建一个虚拟链接用于下载
+                const link = document.createElement('a');
+                link.href = 'https://ibb.co.com/Z63h8mck';
+                link.download = '分享二维码.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                alert('二维码已保存到手机相册，请分享给好友');
+            });
+            
+            // 收藏
+            collectBtn.addEventListener('click', function() {
+                alert('页面已添加到收藏');
+            });
+            
+            // 取消分享
+            cancelShare.addEventListener('click', function() {
+                sharePanel.classList.remove('active');
+                overlay.classList.remove('active');
+            });
+            
+            // 关闭指引并解锁
+            closeGuide.addEventListener('click', function() {
+                shareGuide.classList.remove('active');
+                overlay.classList.remove('active');
+                
+                // 假设用户已经分享
                 hasShared = true;
                 lockedOverlay.classList.add('hidden');
-                shareSection.classList.add('hidden');
                 
                 // 保存分享状态到本地存储
                 localStorage.setItem('hasShared', JSON.stringify(hasShared));
                 
-                // 如果当前有视频，继续播放
-                if (videoPlayer.src) {
-                    videoPlayer.play();
-                }
+                alert('分享成功！已解锁所有视频');
+            });
+            
+            // 点击遮罩层关闭分享面板
+            overlay.addEventListener('click', function() {
+                sharePanel.classList.remove('active');
+                shareGuide.classList.remove('active');
+                overlay.classList.remove('active');
             });
             
             // 初始化
