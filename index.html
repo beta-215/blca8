@@ -535,7 +535,7 @@
     
     <!-- 分享指引 -->
     <div class="share-guide" id="shareGuide">
-        <img src="https://ibb.co.com/Z63h8mck" alt="微信分享指引">
+        <img src="https://via.placeholder.com/200x300/FFFFFF/000000?text=微信分享指引\n请点击右上角...\n选择发送给朋友" alt="微信分享指引">
         <p>请点击右上角"..."按钮</p>
         <p>然后选择"发送给朋友"或"分享到朋友圈"</p>
         <button class="close-guide" id="closeGuide">我已分享</button>
@@ -549,6 +549,9 @@
             // 初始化变量
             let watchedCount = 0;
             let hasShared = false;
+            let currentVideoId = null;
+            let playedVideos = new Set(); // 使用Set来记录已播放的视频，避免重复计数
+            
             const videoPlayer = document.getElementById('videoPlayer');
             const watchedCountElement = document.getElementById('watchedCount');
             const lockedOverlay = document.getElementById('lockedOverlay');
@@ -576,6 +579,12 @@
             const savedHasShared = localStorage.getItem('hasShared');
             if (savedHasShared !== null) {
                 hasShared = JSON.parse(savedHasShared);
+            }
+            
+            // 从本地存储加载已播放视频
+            const savedPlayedVideos = localStorage.getItem('playedVideos');
+            if (savedPlayedVideos !== null) {
+                playedVideos = new Set(JSON.parse(savedPlayedVideos));
             }
             
             // 在这里添加您的多条M3U8链接
@@ -636,6 +645,11 @@
                     videoItem.className = 'video-item';
                     videoItem.dataset.id = video.id;
                     
+                    // 如果视频已播放过，添加特殊标记
+                    if (playedVideos.has(video.id)) {
+                        videoItem.classList.add('played');
+                    }
+                    
                     videoItem.innerHTML = `
                         <div class="thumb">
                             <img src="${video.thumbnail}" alt="${video.title}">
@@ -672,6 +686,7 @@
             // 播放视频函数
             function playVideo(video) {
                 currentVideoTitle.textContent = video.title;
+                currentVideoId = video.id;
                 
                 // 如果HLS已经存在，先销毁
                 if (hls) {
@@ -685,30 +700,12 @@
                     hls.attachMedia(videoPlayer);
                     hls.on(Hls.Events.MANIFEST_PARSED, function() {
                         videoPlayer.play();
-                        
-                        // 增加观看次数
-                        if (!hasShared) {
-                            watchedCount++;
-                            updateWatchedCount();
-                            
-                            // 保存到本地存储
-                            localStorage.setItem('watchedCount', watchedCount);
-                        }
                     });
                 } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
                     // 原生支持HLS的浏览器（如Safari）
                     videoPlayer.src = video.url;
                     videoPlayer.addEventListener('loadedmetadata', function() {
                         videoPlayer.play();
-                        
-                        // 增加观看次数
-                        if (!hasShared) {
-                            watchedCount++;
-                            updateWatchedCount();
-                            
-                            // 保存到本地存储
-                            localStorage.setItem('watchedCount', watchedCount);
-                        }
                     });
                 }
             }
@@ -725,6 +722,21 @@
                     lockedOverlay.classList.add('hidden');
                 }
             }
+            
+            // 视频播放结束事件
+            videoPlayer.addEventListener('ended', function() {
+                // 只有当视频播放完毕且该视频是第一次播放时才计数
+                if (currentVideoId && !playedVideos.has(currentVideoId) && !hasShared) {
+                    playedVideos.add(currentVideoId);
+                    watchedCount = playedVideos.size;
+                    
+                    // 保存到本地存储
+                    localStorage.setItem('watchedCount', watchedCount);
+                    localStorage.setItem('playedVideos', JSON.stringify([...playedVideos]));
+                    
+                    updateWatchedCount();
+                }
+            });
             
             // 显示分享面板
             showShareBtn.addEventListener('click', function() {
@@ -748,7 +760,7 @@
             saveToPhone.addEventListener('click', function() {
                 // 创建一个虚拟链接用于下载
                 const link = document.createElement('a');
-                link.href = 'https://ibb.co.com/Z63h8mck';
+                link.href = 'https://via.placeholder.com/500x500/FFFFFF/000000?text=分享二维码';
                 link.download = '分享二维码.png';
                 document.body.appendChild(link);
                 link.click();
