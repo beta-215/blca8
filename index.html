@@ -450,7 +450,7 @@
     </a>
     
     <div class="player-container">
-        <video id="videoPlayer" controls></video>
+        <video id="videoPlayer" controls playsinline webkit-playsinline></video>
         
         <div id="lockedOverlay" class="locked-overlay hidden">
             <div class="lock-icon">🔒</div>
@@ -539,7 +539,8 @@
     
     <!-- 分享指引 -->
     <div class="share-guide" id="shareGuide">
-        <img src="https://via.placeholder.com/200x300/FFFFFF/000000?text=微信分享指引\n请点击右上角...\n选择发送给朋友" alt="微信分享指引">
+        <!-- 您的二维码图片 -->
+        <img src="https://i.ibb.co.com/Z63h8mck" alt="微信分享指引">
         <p>请点击右上角"..."按钮</p>
         <p>然后选择"发送给朋友"或"分享到朋友圈"</p>
         <button class="close-guide" id="closeGuide">我已分享</button>
@@ -706,44 +707,87 @@
                 
                 // 初始化HLS播放器
                 if (Hls.isSupported()) {
-                    hls = new Hls();
+                    hls = new Hls({
+                        enableWorker: false, // 在微信中可能需要禁用worker
+                        lowLatencyMode: true,
+                        backBufferLength: 90
+                    });
                     hls.loadSource(video.url);
                     hls.attachMedia(videoPlayer);
                     hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                        videoPlayer.play();
+                        // 视频开始播放时计数
+                        videoPlayer.play().then(() => {
+                            // 只有当视频是第一次播放且用户未分享时才计数
+                            if (currentVideoId && !playedVideos.has(currentVideoId) && !hasShared) {
+                                playedVideos.add(currentVideoId);
+                                watchedCount = playedVideos.size;
+                                
+                                // 保存到本地存储
+                                localStorage.setItem('watchedCount', watchedCount);
+                                localStorage.setItem('playedVideos', JSON.stringify([...playedVideos]));
+                                
+                                updateWatchedCount();
+                                updateVideoListDisplay();
+                                
+                                // 检查是否达到3个视频，如果是则锁定
+                                if (watchedCount >= 3) {
+                                    lockedOverlay.classList.remove('hidden');
+                                    videoPlayer.pause();
+                                }
+                            }
+                        }).catch(e => {
+                            console.error("播放失败:", e);
+                        });
+                    });
+                    
+                    // 添加错误处理
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                        if (data.fatal) {
+                            switch(data.type) {
+                                case Hls.ErrorTypes.NETWORK_ERROR:
+                                    console.error("网络错误，尝试重新加载");
+                                    hls.startLoad();
+                                    break;
+                                case Hls.ErrorTypes.MEDIA_ERROR:
+                                    console.error("媒体错误，尝试恢复");
+                                    hls.recoverMediaError();
+                                    break;
+                                default:
+                                    console.error("不可恢复的错误");
+                                    break;
+                            }
+                        }
                     });
                 } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
                     // 原生支持HLS的浏览器（如Safari）
                     videoPlayer.src = video.url;
                     videoPlayer.addEventListener('loadedmetadata', function() {
-                        videoPlayer.play();
+                        videoPlayer.play().then(() => {
+                            // 只有当视频是第一次播放且用户未分享时才计数
+                            if (currentVideoId && !playedVideos.has(currentVideoId) && !hasShared) {
+                                playedVideos.add(currentVideoId);
+                                watchedCount = playedVideos.size;
+                                
+                                // 保存到本地存储
+                                localStorage.setItem('watchedCount', watchedCount);
+                                localStorage.setItem('playedVideos', JSON.stringify([...playedVideos]));
+                                
+                                updateWatchedCount();
+                                updateVideoListDisplay();
+                                
+                                // 检查是否达到3个视频，如果是则锁定
+                                if (watchedCount >= 3) {
+                                    lockedOverlay.classList.remove('hidden');
+                                    videoPlayer.pause();
+                                }
+                            }
+                        }).catch(e => {
+                            console.error("播放失败:", e);
+                        });
                     });
+                } else {
+                    console.error("HLS is not supported");
                 }
-                
-                // 视频开始播放时计数
-                videoPlayer.addEventListener('play', function onPlay() {
-                    // 只有当视频是第一次播放且用户未分享时才计数
-                    if (currentVideoId && !playedVideos.has(currentVideoId) && !hasShared) {
-                        playedVideos.add(currentVideoId);
-                        watchedCount = playedVideos.size;
-                        
-                        // 保存到本地存储
-                        localStorage.setItem('watchedCount', watchedCount);
-                        localStorage.setItem('playedVideos', JSON.stringify([...playedVideos]));
-                        
-                        updateWatchedCount();
-                        updateVideoListDisplay();
-                        
-                        // 检查是否达到3个视频，如果是则锁定
-                        if (watchedCount >= 3) {
-                            lockedOverlay.classList.remove('hidden');
-                            videoPlayer.pause();
-                        }
-                    }
-                    
-                    // 移除事件监听器，避免重复触发
-                    videoPlayer.removeEventListener('play', onPlay);
-                }, { once: true });
             }
             
             // 更新视频列表显示
@@ -779,11 +823,11 @@
                 shareGuide.classList.add('active');
             });
             
-            // 保存到手机
+            // 保存到手机 - 使用您的二维码图片
             saveToPhone.addEventListener('click', function() {
                 // 创建一个虚拟链接用于下载
                 const link = document.createElement('a');
-                link.href = 'https://via.placeholder.com/500x500/FFFFFF/000000?text=分享二维码';
+                link.href = 'https://i.ibb.co.com/Z63h8mck'; // 您的二维码图片地址
                 link.download = '分享二维码.png';
                 document.body.appendChild(link);
                 link.click();
