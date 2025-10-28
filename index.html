@@ -162,6 +162,10 @@
             border-left: 3px solid #2196f3;
         }
         
+        .video-item.played {
+            opacity: 0.7;
+        }
+        
         .video-item .thumb {
             width: 60px;
             height: 45px;
@@ -708,6 +712,37 @@
                         videoPlayer.play();
                     });
                 }
+                
+                // 视频开始播放时计数
+                videoPlayer.addEventListener('play', function onPlay() {
+                    // 只有当视频是第一次播放且用户未分享时才计数
+                    if (currentVideoId && !playedVideos.has(currentVideoId) && !hasShared) {
+                        playedVideos.add(currentVideoId);
+                        watchedCount = playedVideos.size;
+                        
+                        // 保存到本地存储
+                        localStorage.setItem('watchedCount', watchedCount);
+                        localStorage.setItem('playedVideos', JSON.stringify([...playedVideos]));
+                        
+                        updateWatchedCount();
+                        
+                        // 更新视频列表显示
+                        updateVideoListDisplay();
+                    }
+                    
+                    // 移除事件监听器，避免重复触发
+                    videoPlayer.removeEventListener('play', onPlay);
+                }, { once: true });
+            }
+            
+            // 更新视频列表显示
+            function updateVideoListDisplay() {
+                document.querySelectorAll('.video-item').forEach(item => {
+                    const videoId = parseInt(item.dataset.id);
+                    if (playedVideos.has(videoId)) {
+                        item.classList.add('played');
+                    }
+                });
             }
             
             // 更新观看次数
@@ -722,21 +757,6 @@
                     lockedOverlay.classList.add('hidden');
                 }
             }
-            
-            // 视频播放结束事件
-            videoPlayer.addEventListener('ended', function() {
-                // 只有当视频播放完毕且该视频是第一次播放时才计数
-                if (currentVideoId && !playedVideos.has(currentVideoId) && !hasShared) {
-                    playedVideos.add(currentVideoId);
-                    watchedCount = playedVideos.size;
-                    
-                    // 保存到本地存储
-                    localStorage.setItem('watchedCount', watchedCount);
-                    localStorage.setItem('playedVideos', JSON.stringify([...playedVideos]));
-                    
-                    updateWatchedCount();
-                }
-            });
             
             // 显示分享面板
             showShareBtn.addEventListener('click', function() {
