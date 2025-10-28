@@ -468,7 +468,7 @@
         <p>防走丢提示如无法打开，换一部作品分享给裙友</p>
         <div class="watch-count">
             <div class="icon">!</div>
-            <div>今日已观看: <span id="watchedCount">0</span>/3 个免费视频</div>
+            <div>当前周期已观看: <span id="watchedCount">0</span>/3 个免费视频</div>
         </div>
     </div>
     
@@ -555,6 +555,7 @@
             let hasShared = false;
             let currentVideoId = null;
             let playedVideos = new Set(); // 使用Set来记录已播放的视频，避免重复计数
+            let cycleCount = 0; // 记录当前是第几个周期
             
             const videoPlayer = document.getElementById('videoPlayer');
             const watchedCountElement = document.getElementById('watchedCount');
@@ -589,6 +590,12 @@
             const savedPlayedVideos = localStorage.getItem('playedVideos');
             if (savedPlayedVideos !== null) {
                 playedVideos = new Set(JSON.parse(savedPlayedVideos));
+            }
+            
+            // 从本地存储加载周期计数
+            const savedCycleCount = localStorage.getItem('cycleCount');
+            if (savedCycleCount !== null) {
+                cycleCount = parseInt(savedCycleCount);
             }
             
             // 在这里添加您的多条M3U8链接
@@ -725,9 +732,13 @@
                         localStorage.setItem('playedVideos', JSON.stringify([...playedVideos]));
                         
                         updateWatchedCount();
-                        
-                        // 更新视频列表显示
                         updateVideoListDisplay();
+                        
+                        // 检查是否达到3个视频，如果是则锁定
+                        if (watchedCount >= 3) {
+                            lockedOverlay.classList.remove('hidden');
+                            videoPlayer.pause();
+                        }
                     }
                     
                     // 移除事件监听器，避免重复触发
@@ -748,14 +759,6 @@
             // 更新观看次数
             function updateWatchedCount() {
                 watchedCountElement.textContent = watchedCount;
-                
-                if (watchedCount >= 3 && !hasShared) {
-                    // 显示锁定覆盖层
-                    lockedOverlay.classList.remove('hidden');
-                    videoPlayer.pause();
-                } else {
-                    lockedOverlay.classList.add('hidden');
-                }
             }
             
             // 显示分享面板
@@ -805,14 +808,23 @@
                 shareGuide.classList.remove('active');
                 overlay.classList.remove('active');
                 
-                // 假设用户已经分享
+                // 用户已经分享，解锁新的3个视频
                 hasShared = true;
+                cycleCount++;
+                
+                // 重置观看计数，但保留已播放视频记录
+                watchedCount = 0;
+                
+                // 保存状态到本地存储
+                localStorage.setItem('hasShared', JSON.stringify(hasShared));
+                localStorage.setItem('cycleCount', cycleCount);
+                localStorage.setItem('watchedCount', watchedCount);
+                
+                // 更新界面
+                updateWatchedCount();
                 lockedOverlay.classList.add('hidden');
                 
-                // 保存分享状态到本地存储
-                localStorage.setItem('hasShared', JSON.stringify(hasShared));
-                
-                alert('分享成功！已解锁所有视频');
+                alert(`分享成功！已解锁新的3个视频（第${cycleCount+1}周期）`);
             });
             
             // 点击遮罩层关闭分享面板
